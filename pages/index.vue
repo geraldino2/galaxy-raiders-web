@@ -1,7 +1,13 @@
 <template>
+  <div id="menu">
+    <button @click='setCookie("gameStarted", "true");showSpaceField=true;'>Start</button>
+    <button @click='setCookie("gameStarted", "exit");exit();'>Exit</button>
+    <button @click='alert("todo");'>Leaderboard</button>
+  </div>
+
   <div id="canvas">
     <div id="deep-space" />
-    <div id="space-field">
+    <div id="space-field" v-show="showSpaceField" >
       <SpaceObject id="spaceship" class="spaceship" :data="spaceField.ship" resolution="2" />
 
       <SpaceObject class="asteroid" :data="asteroid" resolution="2"
@@ -20,12 +26,52 @@
 </template>
 
 <script setup>
+function getCookie(name) {
+  var cookie = document.cookie;
+  var prefix = name + "=";
+  var begin = cookie.indexOf("; " + prefix);
+  if (begin == -1) {
+    begin = cookie.indexOf(prefix);
+    if (begin != 0) return null;
+  } else {
+    begin += 2;
+    var end = document.cookie.indexOf(";", begin);
+    if (end == -1) end = cookie.length;
+  }
+  return unescape(cookie.substring(begin + prefix.length, end));
+}
+function setCookie(name, value) {
+  let date = new Date();
+  date.setTime(date.getTime() + 2592000);
+  let expires = "; expires=" + date.toUTCString();
+  document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+function exit() {
+  $get("../exit");
+}
+
 const {
   data: spaceField,
   refresh: updateSpaceField
 } = await $get("/space-field");
 
+const showSpaceField = ref(false)
+
+let gameStarted = false
+let pauseOnStart = false
+
 onMounted(() => {
+  gameStarted = getCookie("gameStarted")
+  if (gameStarted == undefined || gameStarted == "exit") {
+    setCookie("gameStarted", "false", "2592000")
+    pauseOnStart = true
+    gameStarted = false
+  } else if (gameStarted == "true") gameStarted = true; else gameStarted = false
+
+  if (gameStarted == false && pauseOnStart) {
+    $post("/ship/commands", '{"command":"PAUSE_GAME"}');
+  }
+
   window.addEventListener("keydown", async (event) => {
     const keyToCommand = {
       "ArrowUp": "MOVE_SHIP_UP",
@@ -40,6 +86,9 @@ onMounted(() => {
 
     // Ignore if invalid key was pressed
     if (command === undefined) return;
+
+    // Ignore if the game hasn't started yet
+    if (getCookie("gameStarted") != "true") return;
 
     console.log(`Triggering command: ${command}`);
     await $post("/ship/commands", { command })
