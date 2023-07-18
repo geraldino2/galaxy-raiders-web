@@ -112,7 +112,6 @@ onMounted(() => {
   border-radius: 100rem;
   font-size: 1rem;
   padding: .5rem 3rem;
-  color: $color-black;
   border: solid 3px transparent;
   background-image: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)), linear-gradient(101deg, #075569, #0f323b);
   background-origin: border-box;
