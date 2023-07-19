@@ -2,14 +2,11 @@
   <div id="canvas">
     <div id="deep-space" />
     <div id="menu">
-      <button class="menu-button" @click='setCookie("gameStarted", "true");showSpaceField=true;'>Start</button>
-      <button class="menu-button" @click='setCookie("gameStarted", "exit");exit();'>Exit</button>
-      <button class="menu-button" @click='alert("todo");'>Update leaderboard</button>
+      <button id="start-button" class="menu-button" v-show="!showSpaceField" @click='setCookie("gameStarted", "true");showSpaceField=true;'>Start</button>
+      <button id="stop-button" class="menu-button" v-show="showSpaceField" @click='setCookie("gameStarted", "exit");exit();'>Exit</button>
     </div>
-    <div id="leaderboard">
-      <!--await $get("/leaderboard");-->
-    </div>
-    <div id="space-field" v-show="showSpaceField" >
+    <div id="leaderboard"></div>
+    <div id="space-field" v-show="showSpaceField">
       <SpaceObject id="spaceship" class="spaceship" :data="spaceField.ship" resolution="2" />
 
       <SpaceObject class="asteroid" :data="asteroid" resolution="2"
@@ -53,6 +50,24 @@ function setCookie(name, value) {
 function exit() {
   $get("../exit");
 }
+
+function updateLeaderboard(fetchObject) {
+  document.getElementById("leaderboard").innerHTML =
+    '<div id="scoreboardTitle">SCOREBOARD</div>';
+  for(let i in fetchObject.data.value.registries) {
+    let reg = fetchObject.data.value.registries[i++];
+    document.getElementById("leaderboard").innerHTML += 
+      '<div class="scoreRegistry">' 
+      + i + ". " + reg.score + " points"
+      + '</div>';
+  }
+}
+
+function fetchLeaderboard() {
+  $get("/leaderboard").then(ans => updateLeaderboard(ans));
+}
+
+const updateInterval = 1000 / 24;
 
 const {
   data: spaceField,
@@ -98,13 +113,35 @@ onMounted(() => {
     await $post("/ship/commands", { command })
   });
 
-  window.setInterval(updateSpaceField, 1000);
+  window.setInterval(updateSpaceField, updateInterval);
+  window.setInterval(fetchLeaderboard, updateInterval);
 })
 </script>
 
 <style>
-#menu {
+#leaderboard {
+  font-family: "Lucida Console", Monaco, monospace;
+  font-size: 14px;
+  letter-spacing: 3px;
+  word-spacing: 6px;
+  color: #FFE81F;
+  position: absolute;
+  right: 50px;
+}
+
+#scoreboardTitle {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+#start-button {
   position: relative;
+}
+
+#stop-button {
+  position: absolute;
+  left: 49%;
+  top: 50px;
 }
 
 .menu-button {
